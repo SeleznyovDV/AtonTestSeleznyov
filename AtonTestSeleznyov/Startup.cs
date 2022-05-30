@@ -1,20 +1,16 @@
 using Data;
+using Data.CQRS;
 using Data.CQRS.Commands.CreateUserCommand;
-using Data.Services.AuthorizationService;
 using Data.Services.CurrentUserService;
 using MediatR;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.HttpsPolicy;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.OpenApi.Models;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using Wep.App.Middlewares;
 
 namespace AtonTestSeleznyov
@@ -28,25 +24,24 @@ namespace AtonTestSeleznyov
 
         public IConfiguration _cfg { get; }
 
-        // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddControllers();
             services.AddSwaggerGen(x => 
             {
                 x.SwaggerDoc("v1", new OpenApiInfo { Title = "AtonTestApi", Version = "v1" });
+                x.OperationFilter<AddRequiredHeaderParameter>();
             });
             services.AddMediatR(typeof(CreateUserHandler).Assembly);
             services.AddDbContext<AppDbContext>(x =>
             {
                 x.UseSqlServer(_cfg.GetConnectionString("Default"));
             });
-            services.AddScoped<IAuthorizationService, AuthorizationService>();
-            services.AddSingleton<ICurrentUserService, CurrentUserService>();
-            //services.AddAutoMapper(typeof(UserProfile));
+            services.AddScoped<ICurrentUserService, CurrentUserService>();
+            services.AddTransient(typeof(IPipelineBehavior<,>), typeof(AuthorizationBehavior<,>));
+            services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
         }
 
-        // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
             if (env.IsDevelopment())

@@ -1,6 +1,5 @@
 ﻿using Data.CQRS.Dto.Response;
 using Data.Exceptions;
-using Data.Services.AuthorizationService;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using System;
@@ -12,22 +11,18 @@ using System.Threading.Tasks;
 
 namespace Data.CQRS.Queries.GetUserQuery
 {
-    public class GetUserHandler : IRequestHandler<GetUserRequest, UserDto>
+    public class AdminGetUserHandler : IRequestHandler<AdminGetUserRequest, UserDto>
     {
-        private readonly IAuthorizationService _as;
         private readonly AppDbContext _db;
 
-        public GetUserHandler(IAuthorizationService authorizationService, AppDbContext db)
+        public AdminGetUserHandler(AppDbContext db)
         {
-            _as = authorizationService;
             _db = db;
         }
-        public async Task<UserDto> Handle(GetUserRequest request, CancellationToken cancellationToken)
+        public async Task<UserDto> Handle(AdminGetUserRequest request, CancellationToken cancellationToken)
         {
-            var currentUser = await _as.AuthorizeAsync(request.dto.CurrentUser.Login, request.dto.CurrentUser.Password);
-            
-            if (currentUser.Admin == false)
-                throw new AccessRightsException();
+            if (request == null)
+                throw new ArgumentNullException(nameof(request));
 
             var user = await _db.User.FirstOrDefaultAsync(user => user.Login == request.dto.Login);
 

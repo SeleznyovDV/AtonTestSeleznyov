@@ -16,7 +16,7 @@ namespace Data.Migrations
                     Password = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     Name = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     Gender = table.Column<int>(type: "int", nullable: false),
-                    Birthday = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    Birthday = table.Column<DateTime>(type: "datetime2(0)", nullable: true),
                     Admin = table.Column<bool>(type: "bit", nullable: false),
                     CreateOn = table.Column<DateTime>(type: "datetime2(0)", nullable: false, defaultValueSql: "getdate()"),
                     ModifiedOn = table.Column<DateTime>(type: "datetime2(0)", nullable: true),
@@ -35,7 +35,7 @@ namespace Data.Migrations
                 columns: new[] { "Guid", "Login", "Password", "Name", "Gender", "Birthday", "Admin", "CreateOn", "CreatedBy" },
                 values: new object[,]
                 {
-                    {Guid.NewGuid(), "СhiefAdmin","123456","Admin",2,DateTime.Now,true, DateTime.Now, "СhiefAdmin"}
+                    {Guid.NewGuid(), "Admin","123456","Admin",2,DateTime.Now,true, DateTime.Now, "Admin"}
                 });
         }
 

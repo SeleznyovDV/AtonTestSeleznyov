@@ -1,12 +1,9 @@
 ﻿using Data.CQRS.Dto.Response;
 using Data.Exceptions;
-using Data.Services.AuthorizationService;
 using Data.Services.CurrentUserService;
-using Data.Validation;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using System;
-
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -14,17 +11,20 @@ namespace Data.CQRS.Commands.Update1UserInfo
 {
     public class Update1UserInfoHandler : IRequestHandler<Update1UserInfoRequest, UserDto>
     {
-        private readonly IAuthorizationService _as;
         private readonly AppDbContext _db;
-        public Update1UserInfoHandler(IAuthorizationService authorizationService, AppDbContext db)
+        private readonly ICurrentUserService _cus;
+        public Update1UserInfoHandler(AppDbContext db, ICurrentUserService cus)
         {
-            _as = authorizationService;
             _db = db;
+            _cus = cus;
         }
         public async Task<UserDto> Handle(Update1UserInfoRequest request, CancellationToken cancellationToken)
         {
-            var currentUser = await _as.AuthorizeAsync(request.dto.CurrentUser.Login, request.dto.CurrentUser.Password);
-            
+            if (request == null)
+                throw new ArgumentNullException(nameof(request));
+
+            var currentUser = await _db.User.FirstOrDefaultAsync(user => user.Login == _cus.GetUserLogin());
+
             if (currentUser.Admin == false && currentUser.Login != request.dto.Login)
                 throw new AccessRightsException();
 
@@ -40,10 +40,7 @@ namespace Data.CQRS.Commands.Update1UserInfo
             user.Birthday = request.dto.Birthday;
             user.Gender = request.dto.Gender;
 
-            var validResult = new ValidateUserModel().Validate(user);
-            
-            if (validResult.Success == false)
-                throw new UserValidationException(validResult.ErroMessage);
+            user.Validate();
 
             _db.Update(user);
             await _db.SaveChangesAsync();

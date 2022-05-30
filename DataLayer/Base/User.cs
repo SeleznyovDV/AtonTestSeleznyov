@@ -1,8 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using Data.Exceptions;
+using Data.Validation;
+using System;
 
 namespace Data.Base
 {
@@ -18,14 +16,33 @@ namespace Data.Base
         public override bool Equals(object? obj)
         {
             if (obj is User user)
-                return Login == user.Login;
+                return Guid == user.Guid;
             
             return false;
         }
         public override int GetHashCode()
         {
  
-            return Login.GetHashCode();
+            return Guid.GetHashCode();
+        }
+        public void Validate()
+        {
+            var result = new ValidUserResult();
+
+            if (new ValidUserLoginSpecification().IsSatisfiedBy(this) == false)
+                result.AddValidationErorr(nameof(this.Login), "Use only Latin letters and numbers.");
+
+            if (new ValidUserPasswordSpecification().IsSatisfiedBy(this) == false)
+                result.AddValidationErorr(nameof(this.Password), "Use only Latin letters and numbers.");
+
+            if (new ValidUserNameSpecification().IsSatisfiedBy(this) == false)
+                result.AddValidationErorr(nameof(this.Name), "Use only Latin and Russian letters");
+
+            if (new ValidUserGenderSpecification().IsSatisfiedBy(this) == false)
+                result.AddValidationErorr(nameof(this.Gender), "Use the following numbers to select the gender: 0 - female, 1 - male, 2 - unknown.");
+
+            if (result.Success == false)
+                throw new UserValidationException(result.ErroMessage);
         }
     }
 }

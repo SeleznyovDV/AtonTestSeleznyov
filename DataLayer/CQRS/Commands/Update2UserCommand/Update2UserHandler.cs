@@ -1,12 +1,9 @@
 ﻿using Data.CQRS.Dto.Response;
 using Data.Exceptions;
-using Data.Services.AuthorizationService;
+using Data.Services.CurrentUserService;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -14,16 +11,19 @@ namespace Data.CQRS.Commands.Update2UserCommand
 {
     public class Update2UserHandler : IRequestHandler<Update2UserRequest, UserDto>
     {
-        private readonly IAuthorizationService _as;
         private readonly AppDbContext _db;
-        public Update2UserHandler(IAuthorizationService authorizationService, AppDbContext db)
+        private readonly ICurrentUserService _cus;
+        public Update2UserHandler(AppDbContext db, ICurrentUserService cus)
         {
-            _as = authorizationService;
             _db = db;
+            _cus = cus;
         }
         public async Task<UserDto> Handle(Update2UserRequest request, CancellationToken cancellationToken)
         {
-            var currentUser = await _as.AuthorizeAsync(request.dto.CurrentUser.Login, request.dto.CurrentUser.Password);
+            if (request == null)
+                throw new ArgumentNullException(nameof(request));
+
+            var currentUser = await _db.User.FirstOrDefaultAsync(user => user.Login == _cus.GetUserLogin());
 
             if (currentUser.Admin == false)
                 throw new AccessRightsException();

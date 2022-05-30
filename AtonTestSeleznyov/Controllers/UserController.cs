@@ -6,9 +6,12 @@ using Data.CQRS.Commands.Update1UserPassword;
 using Data.CQRS.Commands.Update2UserCommand;
 using Data.CQRS.Dto.Request;
 using Data.CQRS.Dto.Response;
+using Data.CQRS.Queries.GetActiveUserListQuery;
+using Data.CQRS.Queries.GetUserListByAgeRequest;
 using Data.CQRS.Queries.GetUserQuery;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Wep.App.Controllers.Base;
@@ -21,11 +24,11 @@ namespace WebApi.Controllers
     public class UserController : ApplicationController
     {
         public UserController(IMediator mediator)
-            :base(mediator)
+            : base(mediator)
         {
 
         }
-        
+
         [HttpPost("create")]
         public async Task<ApiResponse<UserDto>> CreateUser([FromBody] CreateUserDto request,CancellationToken token)
         {
@@ -57,15 +60,39 @@ namespace WebApi.Controllers
 
             return Ok(result);
         }
-        
-        [HttpPost("read/{login}")]
-        public async Task<ApiResponse<UserDto>> GetUser(string login,[FromBody] CurrentUserDto user, CancellationToken token)
+
+        [HttpGet("read/all")]
+        public async Task<ApiResponse<IEnumerable<UserDto>>> GetActiveUserList(CancellationToken token)
         {
-            var result = await Mediator.Send(new GetUserRequest(new GetUserDto { Login = login, CurrentUser = user}), token);
+            var result = await Mediator.Send(new GetActiveUserListRequest(), token);
+
+            return Ok(result);
+        }
+
+        [HttpGet("read/{login}")]
+        public async Task<ApiResponse<UserDto>> AdminGetUser(string login, CancellationToken token)
+        {
+            var result = await Mediator.Send(new AdminGetUserRequest(new GetUserDto { Login = login }), token);
 
             return Ok(result);
         }
         
+        [HttpGet("read")]
+        public async Task<ApiResponse<UserDto>> UserGetUser(CancellationToken token)
+        {
+            var result = await Mediator.Send(new UserGetUserRequest(), token);
+
+            return Ok(result);
+        }
+
+        [HttpGet("read/age/{age}")]
+        public async Task<ApiResponse<IEnumerable<UserDto>>> GetUserListByAge(int age, CancellationToken token)
+        {
+            var result = await Mediator.Send(new GetUserListByAgeRequest(age), token);
+
+            return Ok(result);
+        }
+
         [HttpDelete("delete")]
         public async Task<ApiResponse<UserDto>> DeleteUser([FromBody] DeleteUserDto request, CancellationToken token)
         {

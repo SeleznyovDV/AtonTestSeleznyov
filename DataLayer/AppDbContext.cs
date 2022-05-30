@@ -1,5 +1,4 @@
 ﻿using Data.Base;
-using Data.Services.AuthorizationService;
 using Data.Services.CurrentUserService;
 using Microsoft.EntityFrameworkCore;
 using System.Linq;

@@ -1,5 +1,4 @@
-﻿using Data.CQRS.Dto.Request;
-using Data.CQRS.Dto.Response;
+﻿using Data.CQRS.Dto.Response;
 using MediatR;
 using System;
 using System.Collections.Generic;
@@ -9,5 +8,6 @@ using System.Threading.Tasks;
 
 namespace Data.CQRS.Queries.GetUserQuery
 {
-    public record GetUserRequest(GetUserDto dto) : IRequest<UserDto> { }
+    [AccessRights("User")]
+    public record UserGetUserRequest() : IRequest<UserDto> { }
 }

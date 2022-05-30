@@ -1,6 +1,6 @@
 ﻿using Data.CQRS.Dto.Response;
 using Data.Exceptions;
-using Data.Services.AuthorizationService;
+using Data.Services.CurrentUserService;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using System;
@@ -11,26 +11,24 @@ namespace Data.CQRS.Commands.DeleteUserCommand
 {
     public class DeleteUserHandler : IRequestHandler<DeleteUserRequest, UserDto>
     {
-        private readonly IAuthorizationService _as;
         private readonly AppDbContext _db;
-        public DeleteUserHandler(IAuthorizationService authorizationService, AppDbContext db)
+        private readonly ICurrentUserService _cus;
+        public DeleteUserHandler(AppDbContext db, ICurrentUserService cus)
         {
-            _as = authorizationService;
             _db = db;
+            _cus = cus;
         }
         public async Task<UserDto> Handle(DeleteUserRequest request, CancellationToken cancellationToken)
         {
-            var currentUser = await _as.AuthorizeAsync(request.dto.CurrentUser.Login, request.dto.CurrentUser.Password);
-
-            if (currentUser.Admin == false)
-                throw new AccessRightsException();
+            if (request == null)
+                throw new ArgumentNullException(nameof(request));
 
             var user = await _db.User.FirstOrDefaultAsync(user => user.Login == request.dto.Login);
 
             if (user == null)
                 throw new UserNotFoundException();
 
-            if (currentUser.Equals(user))
+            if (_cus.GetUserLogin() ==  user.Login)
                 throw new SelfDeletingException();
 
             if (request.dto.SoftRemoval)
@@ -38,7 +36,7 @@ namespace Data.CQRS.Commands.DeleteUserCommand
                 if (user.IsDeleted())
                     throw new RevokedUserException();
 
-                user.Revoke(currentUser.Login);
+                user.Revoke(_cus.GetUserLogin());
             }
             else
             {

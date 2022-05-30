@@ -1,14 +1,9 @@
 ﻿using Data.CQRS.Dto.Response;
 using Data.Exceptions;
-using Data.Services.AuthorizationService;
 using Data.Services.CurrentUserService;
-using Data.Validation;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -16,16 +11,19 @@ namespace Data.CQRS.Commands.Update1UserPassword
 {
     public class Update1UserPasswordHandler : IRequestHandler<Update1UserPasswordRequest, UserDto>
     {
-        private readonly IAuthorizationService _as;
         private readonly AppDbContext _db;
-        public Update1UserPasswordHandler(IAuthorizationService authorizationService, AppDbContext db)
+        private readonly ICurrentUserService _cus;
+        public Update1UserPasswordHandler(AppDbContext db, ICurrentUserService cus)
         {
-            _as = authorizationService;
             _db = db;
+            _cus = cus;
         }
         public async Task<UserDto> Handle(Update1UserPasswordRequest request, CancellationToken cancellationToken)
         {
-            var currentUser = await _as.AuthorizeAsync(request.dto.CurrentUser.Login, request.dto.CurrentUser.Password);
+            if (request == null)
+                throw new ArgumentNullException(nameof(request));
+
+            var currentUser = await _db.User.FirstOrDefaultAsync(user => user.Login == _cus.GetUserLogin());
 
             if (currentUser.Admin == false && currentUser.Login != request.dto.Login)
                 throw new AccessRightsException();
@@ -43,10 +41,7 @@ namespace Data.CQRS.Commands.Update1UserPassword
             
             user.Password = request.dto.Password;
 
-            var validResult = new ValidateUserModel().Validate(user);
-
-            if (validResult.Success == false)
-                throw new UserValidationException(validResult.ToString());
+            user.Validate();
 
             _db.Update(user);
             await _db.SaveChangesAsync();

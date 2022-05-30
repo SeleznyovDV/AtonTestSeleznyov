@@ -1,36 +1,38 @@
-﻿using Data.Base;
+﻿using Data.CQRS.Dto.Request;
+using Microsoft.AspNetCore.Http;
 using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Data.Services.CurrentUserService
 {
     public class CurrentUserService : ICurrentUserService
     {
-        public User _user;
+        private readonly IHttpContextAccessor _contextAcessor;
+        private Lazy<CurrentUserDto> _currentUser;
 
-        public CurrentUserService()
+        public CurrentUserService(IHttpContextAccessor contextAccessor)
         {
-            _user = null;
+            _contextAcessor = contextAccessor;
+            _currentUser = new Lazy<CurrentUserDto>(() => CreateCurrentUser());
         }
+
         public string GetUserLogin()
         {
-            if (_user == null)
-                throw new InvalidOperationException();
+            return _currentUser.Value.Login;
+        }
+        public CurrentUserDto GetUser() => _currentUser.Value;
+        private CurrentUserDto CreateCurrentUser() 
+        {
+            var context = _contextAcessor.HttpContext;
+
+            var headers = context.Request.Headers;
+
+            var (key1, login) = headers.FirstOrDefault(x => x.Key == "login");
             
-            return _user.Login;
-        }
+            var (key2, password) = headers.FirstOrDefault(x => x.Key == "password");
 
-        public void RemoveCurrentUser()
-        {
-            _user = null;
-        }
+            return new CurrentUserDto { Login = login, Password = password };
 
-        public void SetCurrentUser(User user)
-        {
-            _user = user;
         }
     }
 }
